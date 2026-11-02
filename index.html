@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wielki Quiz CS2 dla Oli 🎮</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Plus Jakarta Sans & Orbitron for Gaming Vibe -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap">
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            csOrange: '#de9b35',
+            csOrangeGlow: '#f59e0b',
+            csDark: '#0b0f19',
+            csCard: '#151c2e',
+            csBorder: '#263352'
+          },
+          fontFamily: {
+            orbitron: ['Orbitron', 'sans-serif'],
+            sans: ['Plus Jakarta Sans', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      background: radial-gradient(circle at top center, #1b263b 0%, #0b0f19 80%);
+      min-height: 100vh;
+      color: #f8fafc;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    .neon-text-orange {
+      text-shadow: 0 0 12px rgba(245, 158, 11, 0.6);
+    }
+    
+    .neon-box-orange {
+      box-shadow: 0 0 20px rgba(245, 158, 11, 0.25);
+    }
+
+    .option-card {
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .option-card:hover:not(.disabled) {
+      transform: translateY(-2px);
+      border-color: #f59e0b;
+      box-shadow: 0 4px 20px rgba(245, 158, 11, 0.2);
+    }
+
+    /* Confetti Canvas overlay */
+    #confetti-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      pointer-events: none;
+      z-index: 50;
+    }
+  </style>
+</head>
+<body class="flex flex-col items-center justify-center p-4 sm:p-6 relative overflow-x-hidden">
+
+  <canvas id="confetti-canvas"></canvas>
+
+  <div class="w-full max-w-2xl bg-csCard/90 backdrop-blur-md rounded-2xl border border-csBorder p-6 sm:p-8 neon-box-orange my-auto relative z-10 shadow-2xl">
+    
+    <!-- HEADER -->
+    <header class="text-center mb-6">
+      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-bold tracking-wider uppercase mb-3">
+        <i class="fa-solid fa-gamepad"></i> CS2 Edition
+      </div>
+      <h1 class="text-2xl sm:text-4xl font-extrabold font-orbitron tracking-wide text-white uppercase">
+        Quiz CS2 dla <span class="text-csOrangeGlow neon-text-orange">Oli</span>
+      </h1>
+      <p class="text-slate-400 text-sm sm:text-base mt-1">Sprawdź swoją wiedzę o świecie Counter-Strike'a w wersji dla zabawy!</p>
+    </header>
+
+    <!-- START SCREEN -->
+    <div id="start-screen" class="text-center py-8">
+      <div class="w-24 h-24 mx-auto mb-6 bg-gradient-to-tr from-amber-500 to-yellow-300 rounded-full flex items-center justify-center shadow-lg shadow-amber-500/30">
+        <i class="fa-solid fa-crosshair text-4xl text-slate-950"></i>
+      </div>
+      <h2 class="text-xl font-bold mb-3">Gotowa na wyzwanie?</h2>
+      <p class="text-slate-300 text-sm sm:text-base max-w-md mx-auto mb-8 leading-relaxed">
+        Przygotowałem dla Ciebie 13 pytań pełnych humoru, popularnych hasłek, sytuacji z gry i ciekawostek!
+      </p>
+      <button id="btn-start" class="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold font-orbitron text-lg rounded-xl shadow-lg transition-all transform hover:scale-105 active:scale-95">
+        ZACZYNAMY! <i class="fa-solid fa-play ml-2"></i>
+      </button>
+    </div>
+
+    <!-- QUIZ SCREEN -->
+    <div id="quiz-screen" class="hidden">
+      <!-- PROGRESS & STATS -->
+      <div class="mb-6">
+        <div class="flex justify-between items-center text-sm font-semibold mb-2">
+          <span class="text-slate-400">Pytanie <span id="current-q-num" class="text-amber-400">1</span> z <span id="total-q-num">13</span></span>
+          <span class="text-slate-400">Wynik: <span id="score-counter" class="text-emerald-400 font-bold">0</span></span>
+        </div>
+        <!-- Progress bar -->
+        <div class="w-full bg-slate-800 h-3 rounded-full overflow-hidden border border-slate-700">
+          <div id="progress-bar" class="bg-gradient-to-r from-amber-500 to-yellow-400 h-full w-0 transition-all duration-300"></div>
+        </div>
+      </div>
+
+      <!-- QUESTION TEXT -->
+      <div class="bg-slate-900/60 p-5 sm:p-6 rounded-xl border border-slate-700/60 mb-6">
+        <h3 id="question-title" class="text-lg sm:text-xl font-bold text-slate-100 leading-snug">
+          Ładowanie pytania...
+        </h3>
+      </div>
+
+      <!-- OPTIONS CONTAINER -->
+      <div id="options-container" class="space-y-3 mb-6">
+        <!-- Generated by JS -->
+      </div>
+
+      <!-- EXPLANATION / FEEDBACK -->
+      <div id="feedback-box" class="hidden p-4 rounded-xl mb-6 text-sm sm:text-base font-medium flex items-center gap-3">
+        <i id="feedback-icon" class="text-xl"></i>
+        <span id="feedback-text"></span>
+      </div>
+
+      <!-- NEXT BUTTON -->
+      <button id="btn-next" class="hidden w-full py-3.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold font-orbitron rounded-xl shadow-md transition-all">
+        NASTĘPNE PYTANIE <i class="fa-solid fa-arrow-right ml-2"></i>
+      </button>
+    </div>
+
+    <!-- END SCREEN -->
+    <div id="end-screen" class="hidden text-center py-6">
+      <div class="w-20 h-20 mx-auto mb-4 bg-amber-500/20 border-2 border-amber-500 text-amber-400 rounded-full flex items-center justify-center text-3xl shadow-lg">
+        <i class="fa-solid fa-trophy"></i>
+      </div>
+      <h2 id="end-title" class="text-2xl sm:text-3xl font-orbitron font-extrabold text-white mb-2">Brawo!</h2>
+      <p id="end-subtitle" class="text-slate-400 text-sm sm:text-base mb-6">Oto Twój ostateczny wynik:</p>
+
+      <div class="bg-slate-900/80 p-6 rounded-xl border border-slate-700 max-w-sm mx-auto mb-6">
+        <div class="text-5xl font-extrabold font-orbitron text-amber-400 mb-2">
+          <span id="final-score">0</span>/<span id="final-total">13</span>
+        </div>
+        <p id="rank-badge" class="inline-block px-4 py-1 rounded-full text-xs font-bold tracking-widest uppercase bg-amber-500/20 text-amber-300 border border-amber-500/40">
+          Ranga: Nowicjuszka
+        </p>
+      </div>
+
+      <p id="end-description" class="text-slate-300 text-sm sm:text-base mb-8 max-w-md mx-auto leading-relaxed">
+        Opis rangi...
+      </p>
+
+      <button id="btn-restart" class="px-8 py-3.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold font-orbitron text-base rounded-xl shadow-lg transition-all transform hover:scale-105 active:scale-95">
+        ZAGRAJ PONOWNIE <i class="fa-solid fa-rotate-right ml-2"></i>
+      </button>
+    </div>
+
+  </div>
+
+  <script>
+    // --- SOUND EFFECTS USING WEB AUDIO API ---
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    let audioCtx;
+
+    function initAudio() {
+      if (!audioCtx) audioCtx = new AudioCtx();
+    }
+
+    function playSound(type) {
+      try {
+        initAudio();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+
+        const now = audioCtx.currentTime;
+
+        if (type === 'click') {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(600, now);
+          osc.frequency.exponentialRampToValueAtTime(300, now + 0.05);
+          gain.gain.setValueAtTime(0.15, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start(now);
+          osc.stop(now + 0.05);
+        } else if (type === 'correct') {
+          const osc1 = audioCtx.createOscillator();
+          const osc2 = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+
+          osc1.type = 'triangle';
+          osc2.type = 'sine';
+
+          osc1.frequency.setValueAtTime(523.25, now); // C5
+          osc1.frequency.setValueAtTime(659.25, now + 0.1); // E5
+          osc1.frequency.setValueAtTime(783.99, now + 0.2); // G5
+
+          osc2.frequency.setValueAtTime(1046.50, now + 0.2); // C6
+
+          gain.gain.setValueAtTime(0.2, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+
+          osc1.connect(gain);
+          osc2.connect(gain);
+          gain.connect(audioCtx.destination);
+
+          osc1.start(now);
+          osc2.start(now + 0.2);
+          osc1.stop(now + 0.4);
+          osc2.stop(now + 0.4);
+        } else if (type === 'wrong') {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(180, now);
+          osc.frequency.linearRampToValueAtTime(110, now + 0.2);
+          gain.gain.setValueAtTime(0.25, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start(now);
+          osc.stop(now + 0.25);
+        } else if (type === 'win') {
+          const notes = [440, 554.37, 659.25, 880];
+          notes.forEach((freq, i) => {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(freq, now + i * 0.12);
+            gain.gain.setValueAtTime(0.2, now + i * 0.12);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + i * 0.12 + 0.3);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(now + i * 0.12);
+            osc.stop(now + i * 0.12 + 0.3);
+          });
+        }
+      } catch (e) {
+        console.error("Audio error:", e);
+      }
+    }
+
+    // --- QUIZ QUESTIONS DATA ---
+    const quizData = [
+      {
+        question: "1. \"Drop me AWP!\" — Co oznacza ten słynny okrzyk na czacie głosowym?",
+        options: [
+          "A) Prosi o przygotowanie gorącej herbaty",
+          "B) Kup mi najdroższą i najbardziej niszczycielską snajperkę, bo brakuje mi funduszy",
+          "C) Wyleciała mi myszka z rąk na podłogę"
+        ],
+        correct: 1,
+        explain: "AWP to najpotężniejsza i najdroższa snajperka w grze – potrafi zlikwidować wroga jednym strzałem!"
+      },
+      {
+        question: "2. \"Play ECO!\" — Co drużyna planuje w danej rundzie?",
+        options: [
+          "A) Oszczędzają pieniądze i kupują tylko pistolety, by mieć na pełny sprzęt w kolejnej rundzie",
+          "B) Segregują śmieci i sprzątają mapę",
+          "C) Grają całkowicie bez dźwięku"
+        ],
+        correct: 0,
+        explain: "Runda ekonomiczna (ECO) to celowe oszczędzanie kasy, by w następnym starciu kupić pełen pancerz i karabiny."
+      },
+      {
+        question: "3. Co oznacza słynne hasło \"Rush B!\"?",
+        options: [
+          "A) Ucieczka na własną bazę startową",
+          "B) Błyskawiczny, zmasowany atak całej drużyny na strefę B bez zatrzymywania się",
+          "C) Przerwa na szybką przekąskę"
+        ],
+        correct: 1,
+        explain: "To najbardziej ikoniczna taktyka w historii CS-a – szybki bieg na pełnym gazie prosto na punkt B!"
+      },
+      {
+        question: "4. Czym jest legendarne \"Ace\" (As)?",
+        options: [
+          "A) Gdy jeden gracz sam wyeliminuje wszystkich 5 przeciwników w jednej rundzie",
+          "B) Trafienie pistoletem z drugiego końca mapy przez ścianę",
+          "C) Przypadkowe trafienie w kolegę z drużyny"
+        ],
+        correct: 0,
+        explain: "Wyczyszczenie całej 5-osobowej drużyny wroga przez jednego gracza to powód do dumy i wielkich owacji!"
+      },
+      {
+        question: "5. Co to znaczy, że gracz ugrał \"Clutch\"?",
+        options: [
+          "A) Został sam na kilku wrogów i mimo ogromnej presji wygrał rundę",
+          "B) Zepsuła mu się klawiatura w najważniejszym momencie",
+          "C) Zasnął podczas rozgrywki"
+        ],
+        correct: 0,
+        explain: "Clutch to akcja pod najwyższym ciśnieniem – np. wygrana 1 na 3 w ostatnich sekundach rundy!"
+      },
+      {
+        question: "6. \"Ktoś stoi na spawnie i się nie rusza... On jest AFK!\" — Co to oznacza?",
+        options: [
+          "A) Gracz odszedł od komputera (Away From Keyboard), np. po napój lub napisać SMS-a",
+          "B) Jest zawodowym e-sportowcem rozpracowującym taktykę",
+          "C) Włączył tryb niewidzialności"
+        ],
+        correct: 0,
+        explain: "AFK (Away From Keyboard) oznacza, że gracz fizycznie nie siedzi przy klawiaturze."
+      },
+      {
+        question: "7. Co robi granat błyskowy \"Flashbang\"?",
+        options: [
+          "A) Oślepia wszystkich patrzacych w jego stronę jasnym, białym ekranem",
+          "B) Tworzy gęstą zasłonę dymną",
+          "C) Przywraca punkty życia sojusznikom"
+        ],
+        correct: 0,
+        explain: "Niewłaściwie rzucony potrafi oślepić nie tylko wrogów, ale i całą własną drużynę!"
+      },
+      {
+        question: "8. Dlaczego niektóre \"Skiny\" (wyglądy broni) osiągają astronomiczne ceny?",
+        options: [
+          "A) Dają +50% dodatkowych obrażeń",
+          "B) Są unikalne, rzadkie, kolekcjonerskie i świetnie wyglądają",
+          "C) Pozwalają strzelać przez grube ściany"
+        ],
+        correct: 1,
+        explain: "Skiny to czysta kosmetyka – nie dają przewagi w grze, ale mają ogromną wartość kolekcjonerską!"
+      },
+      {
+        question: "9. Co robi granat dymny (tzw. \"Smoke\")?",
+        options: [
+          "A) Tworzy gęstą chmurę dymu blokującą widoczność i gasi ogień z Molotova",
+          "B) Odnawia amunicję w pistoletach",
+          "C) Wybucha zadając obrażenia obszarowe"
+        ],
+        correct: 0,
+        explain: "Smoke to podstawa taktyki – zasłania snajperów i pozwala bezpiecznie przejść przez niebezpieczne strefy."
+      },
+      {
+        question: "10. Co oznacza pojęcie \"Rotate\" (Rotacja)?",
+        options: [
+          "A) Szybkie przejście graczy z jednego rejonu mapy w drugi w reakcji na akcję przeciwnika",
+          "B) Obracanie się w kółko w miejscu dla zabawy",
+          "C) Zmiana karabinu na nóż"
+        ],
+        correct: 0,
+        explain: "Rotacja to zmiana pozycji całej obrony lub ataku, gdy dowiadują się, gdzie toczy się główna walka."
+      },
+      {
+        question: "11. \"He's One-HP!\" (Ma 1 HP!) — Co krzyczy gracz swoim towarzyszom?",
+        options: [
+          "A) Przeciwnik jest skrajnie osłabiony i wystarczy jeden lekki strzał, by go pokonać",
+          "B) Przeciwnik ma pełne zdrowie i super pancerz",
+          "C) Przeciwnik uciekł całkowicie z mapy"
+        ],
+        correct: 0,
+        explain: "HP to punkty zdrowia (Health Points). 1 HP oznacza, że wróg ledwo żyje!"
+      },
+      {
+        question: "12. Co oznacza spektakularny \"Ninja Defuse\"?",
+        options: [
+          "A) Rozbrojenie bomby po cichu w dymie, gdy przeciwnicy nawet tego nie zauważają",
+          "B) Rzucenie granatu w kształcie gwiazdki ninja",
+          "C) Opuszczenie meczu tuż przed wybuchem"
+        ],
+        correct: 0,
+        explain: "To jedna z najbardziej zabawnych akcji – rozbrajasz bombę tuż pod nosem wrogów, którzy myślą, że schowałeś się w kącie!"
+      },
+      {
+        question: "13. Co to są tak zwane \"Callouty\" na mapach?",
+        options: [
+          "A) Precyzyjne nazwy konkretnych miejsc na mapie służące do szybkiej komunikacji",
+          "B) Wirtualne sklepy z bronią",
+          "C) Napisy graficzne na ścianach"
+        ],
+        correct: 0,
+        explain: "Dzięki calloutom (np. 'Gala', 'Banat', 'Komin') gracze od razu wiedzą, gdzie znajduje się wróg."
+      }
+    ];
+
+    // --- STATE VARIABLES ---
+    let currentQ = 0;
+    let score = 0;
+    let answered = false;
+
+    // --- DOM ELEMENTS ---
+    const startScreen = document.getElementById('start-screen');
+    const quizScreen = document.getElementById('quiz-screen');
+    const endScreen = document.getElementById('end-screen');
+
+    const btnStart = document.getElementById('btn-start');
+    const btnNext = document.getElementById('btn-next');
+    const btnRestart = document.getElementById('btn-restart');
+
+    const currentQNum = document.getElementById('current-q-num');
+    const totalQNum = document.getElementById('total-q-num');
+    const scoreCounter = document.getElementById('score-counter');
+    const progressBar = document.getElementById('progress-bar');
+    const questionTitle = document.getElementById('question-title');
+    const optionsContainer = document.getElementById('options-container');
+
+    const feedbackBox = document.getElementById('feedback-box');
+    const feedbackIcon = document.getElementById('feedback-icon');
+    const feedbackText = document.getElementById('feedback-text');
+
+    const finalScore = document.getElementById('final-score');
+    const finalTotal = document.getElementById('final-total');
+    const rankBadge = document.getElementById('rank-badge');
+    const endTitle = document.getElementById('end-title');
+    const endDescription = document.getElementById('end-description');
+
+    // --- EVENT LISTENERS ---
+    btnStart.addEventListener('click', () => {
+      playSound('click');
+      startScreen.classList.add('hidden');
+      quizScreen.classList.remove('hidden');
+      initQuiz();
+    });
+
+    btnNext.addEventListener('click', () => {
+      playSound('click');
+      currentQ++;
+      if (currentQ < quizData.length) {
+        loadQuestion();
+      } else {
+        showEndScreen();
+      }
+    });
+
+    btnRestart.addEventListener('click', () => {
+      playSound('click');
+      endScreen.classList.add('hidden');
+      quizScreen.classList.remove('hidden');
+      initQuiz();
+    });
+
+    // --- QUIZ LOGIC ---
+    function initQuiz() {
+      currentQ = 0;
+      score = 0;
+      totalQNum.textContent = quizData.length;
+      scoreCounter.textContent = '0';
+      loadQuestion();
+    }
+
+    function loadQuestion() {
+      answered = false;
+      const q = quizData[currentQ];
+
+      // Update Header Info
+      currentQNum.textContent = currentQ + 1;
+      const progressPercent = ((currentQ) / quizData.length) * 100;
+      progressBar.style.width = `${progressPercent}%`;
+
+      // Question Text & Reset
+      questionTitle.textContent = q.question;
+      optionsContainer.innerHTML = '';
+      feedbackBox.classList.add('hidden');
+      btnNext.classList.add('hidden');
+
+      // Generate Options
+      q.options.forEach((optText, index) => {
+        const optBtn = document.createElement('button');
+        optBtn.className = `option-card w-full text-left p-4 rounded-xl border border-slate-700 bg-slate-800/80 hover:bg-slate-700/80 text-slate-200 font-medium text-sm sm:text-base flex items-center justify-between gap-3 cursor-pointer select-none`;
+        optBtn.innerHTML = `
+          <span>${optText}</span>
+          <i class="opt-icon fa-regular fa-circle text-slate-500 text-lg"></i>
+        `;
+        optBtn.addEventListener('click', () => handleSelectOption(index, optBtn));
+        optionsContainer.appendChild(optBtn);
+      });
+    }
+
+    function handleSelectOption(selectedIndex, selectedBtn) {
+      if (answered) return;
+      answered = true;
+
+      const q = quizData[currentQ];
+      const allButtons = optionsContainer.querySelectorAll('button');
+
+      // Disable hover on all buttons
+      allButtons.forEach(btn => btn.classList.add('disabled', 'cursor-default'));
+
+      if (selectedIndex === q.correct) {
+        // Correct Answer
+        playSound('correct');
+        score++;
+        scoreCounter.textContent = score;
+
+        selectedBtn.classList.remove('bg-slate-800/80', 'border-slate-700');
+        selectedBtn.classList.add('bg-emerald-950/80', 'border-emerald-500', 'text-emerald-200');
+        selectedBtn.querySelector('.opt-icon').className = 'opt-icon fa-solid fa-circle-check text-emerald-400 text-lg';
+
+        feedbackBox.className = 'p-4 rounded-xl mb-6 text-sm sm:text-base font-medium flex items-start gap-3 bg-emerald-950/60 border border-emerald-500/40 text-emerald-300';
+        feedbackIcon.className = 'fa-solid fa-circle-check text-emerald-400 text-xl mt-0.5';
+        feedbackText.innerHTML = `<b>Dobrze!</b> ${q.explain}`;
+      } else {
+        // Wrong Answer
+        playSound('wrong');
+
+        selectedBtn.classList.remove('bg-slate-800/80', 'border-slate-700');
+        selectedBtn.classList.add('bg-rose-950/80', 'border-rose-500', 'text-rose-200');
+        selectedBtn.querySelector('.opt-icon').className = 'opt-icon fa-solid fa-circle-xmark text-rose-400 text-lg';
+
+        // Highlight correct option
+        const correctBtn = allButtons[q.correct];
+        correctBtn.classList.remove('bg-slate-800/80', 'border-slate-700');
+        correctBtn.classList.add('bg-emerald-950/60', 'border-emerald-500/60', 'text-emerald-300');
+        correctBtn.querySelector('.opt-icon').className = 'opt-icon fa-solid fa-circle-check text-emerald-400 text-lg';
+
+        feedbackBox.className = 'p-4 rounded-xl mb-6 text-sm sm:text-base font-medium flex items-start gap-3 bg-rose-950/60 border border-rose-500/40 text-rose-300';
+        feedbackIcon.className = 'fa-solid fa-circle-exclamation text-rose-400 text-xl mt-0.5';
+        feedbackText.innerHTML = `<b>Prawie!</b> ${q.explain}`;
+      }
+
+      feedbackBox.classList.remove('hidden');
+      btnNext.classList.remove('hidden');
+
+      // Update progress bar full for last question
+      if (currentQ === quizData.length - 1) {
+        progressBar.style.width = '100%';
+      }
+    }
+
+    function showEndScreen() {
+      quizScreen.classList.add('hidden');
+      endScreen.classList.remove('hidden');
+      playSound('win');
+
+      finalScore.textContent = score;
+      finalTotal.textContent = quizData.length;
+
+      const percentage = (score / quizData.length) * 100;
+
+      if (percentage === 100) {
+        endTitle.textContent = "ABSOLUTNA LEGENDA!";
+        rankBadge.textContent = "Ranga: Global Elite 👑";
+        endDescription.textContent = "Niesamowite! Znasz świat CS2 lepiej niż większość graczy po tysiącu godzin! Masz perfekcyjne wyczucie gry i żargonu!";
+        triggerConfetti();
+      } else if (percentage >= 75) {
+        endTitle.textContent = "EKSPERTKA CS2!";
+        rankBadge.textContent = "Ranga: Master Guardian 🎯";
+        endDescription.textContent = "Świetny wynik! Orientujesz się w pojęciach bez problemu. Oglądanie meczu razem z Tobą to będzie czysta przyjemność!";
+        triggerConfetti();
+      } else if (percentage >= 50) {
+        endTitle.textContent = "DOBRY POCZĄTEK!";
+        rankBadge.textContent = "Ranga: Gold Nova ⚡";
+        endDescription.textContent = "Całkiem ładnie! Znasz już najważniejsze pojęcia i na pewno nie zginiesz w rozmowach o grze!";
+      } else {
+        endTitle.textContent = "PIERWSZE KROKI!";
+        rankBadge.textContent = "Ranga: Silver I 🔰";
+        endDescription.textContent = "Każdy pro-gracz od czegoś zaczynał! Najważniejsze to dobra zabawa – teraz czas obejrzeć jeden mecz w praktyce!";
+      }
+    }
+
+    // --- SIMPLE CONFETTI ANIMATION ---
+    function triggerConfetti() {
+      const canvas = document.getElementById('confetti-canvas');
+      const ctx = canvas.getContext('2d');
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+
+      const particles = [];
+      const colors = ['#f59e0b', '#3b82f6', '#10b981', '#ec4899', '#8b5cf6'];
+
+      for (let i = 0; i < 90; i++) {
+        particles.push({
+          x: Math.random() * canvas.width,
+          y: Math.random() * canvas.height - canvas.height,
+          size: Math.random() * 8 + 4,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          vy: Math.random() * 3 + 2,
+          vx: Math.random() * 2 - 1,
+          rot: Math.random() * 360,
+          rotSpeed: Math.random() * 6 - 3
+        });
+      }
+
+      let animationFrame;
+      const startTime = Date.now();
+
+      function render() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        particles.forEach(p => {
+          p.y += p.vy;
+          p.x += p.vx;
+          p.rot += p.rotSpeed;
+
+          ctx.save();
+          ctx.translate(p.x, p.y);
+          ctx.rotate((p.rot * Math.PI) / 180);
+          ctx.fillStyle = p.color;
+          ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+          ctx.restore();
+        });
+
+        if (Date.now() - startTime < 4000) {
+          animationFrame = requestAnimationFrame(render);
+        } else {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+      }
+
+      render();
+    }
+  </script>
+</body>
+</html>
